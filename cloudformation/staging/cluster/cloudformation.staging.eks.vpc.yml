@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: <
+      Base EKS Airflow Vpc resources
+
+Parameters:
+
+  ProjectNamePrefix:
+    Type: String
+
+  VpcCidrBlock:
+    Type: String
+
+  DummySubnetBlock:
+    Type: String
+
+  StackSubnetBlock:
+    Type: String
+
+Resources:
+
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !Ref VpcCidrBlock
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectNamePrefix}-vpc'
+
+  # ----------------------- Internet Gateway--------------------------------
+
+  Internet:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref Internet
+      VpcId: !Ref VPC
+
+  # ---------------------- Subnets------------------------------------------
+
+  DummySubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}b'
+      CidrBlock: !Ref DummySubnetBlock
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-dummy'
+      VpcId: !Ref VPC
+
+  StackSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}a'
+      CidrBlock: !Ref StackSubnetBlock
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-subnet'
+      VpcId: !Ref VPC
+
+  # ----------------------- Routes-------------------------------------------
+
+  Routes:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+
+  Opener:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Internet
+      RouteTableId: !Ref Routes
+    DependsOn:
+      - VPCGatewayAttachment
+
+  SubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref Routes
+      SubnetId: !Ref StackSubnet
+
+Outputs:
+
+  EksAirflowVpcOut:
+    Description: Reference for the VPC
+    Value: !Ref VPC
+
+  EksAirflowPublicSubnetOut:
+    Value: !Ref StackSubnet
+
+  EksAirflowDummySubnetOut:
+    Value: !Ref DummySubnet
+
+
