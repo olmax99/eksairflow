@@ -15,11 +15,13 @@ NOTE: All finished tasks can be viewed in [CHANGELOG.md](CHANGELOG.md)
 
 ### 1. Deploy
 
-- Understand `villasv/aws-airflow-stack`: Turbine
+X Understand `villasv/aws-airflow-stack`: Turbine
+
+- [Optionally] Use AWS Systems Manager instead of Bastion Host 
 
 - Understand Code deploy in [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) and compare to 'sync bucket method' (see `2. Upstream your files`)
 
-- Create nested cfn stack with a master template, turn into Terraform
+- Create nested cfn stack with a master template, private subnets + vpn
 
 
 ### 2. Airflow Stuff
