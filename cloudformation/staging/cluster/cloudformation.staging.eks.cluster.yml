@@ -104,8 +104,10 @@ Resources:
           - !Ref AWS::Region
           - AMZNLINUX2
         InstanceType: !Ref WebserverInstanceType
-        PublicSubnet1ID: !Ref PublicSubnet1ID
-        PublicSubnet2ID: !Ref PublicSubnet2ID
+        PrivateSubnet1ID: !Ref PrivateSubnet1AID
+        PrivateSubnet2ID: !Ref PrivateSubnet2AID
+#        PublicSubnet1ID: !Ref PublicSubnet1ID
+#        PublicSubnet2ID: !Ref PublicSubnet2ID
     DependsOn:
       - Meta
 

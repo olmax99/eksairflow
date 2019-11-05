@@ -134,6 +134,17 @@ Parameters:
     ConstraintDescription: >-
       Quick Start key prefix can include numbers, lowercase letters, uppercase
       letters, hyphens (-), and forward slash (/).
+  OpenVPNPortNumber:
+    Description: The custom port to use for the open vpn traffic
+    Type: Number
+  VPNInstanceKeyName:
+    Description: Name of the existing SSH access Key
+    Type: String
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription: >-
+      Quick Start bucket name can include numbers, lowercase letters, uppercase
+      letters, and hyphens (-). It cannot start or end with a hyphen (-).
+
 
 Resources:
 
@@ -146,6 +157,7 @@ Resources:
           - !Sub ${QSS3KeyPrefix}templates
           - cloudformation.staging.eks.vpc.yml
       Parameters:
+        # TODO: Replace public subnets with private only
         VPCCIDR: !Ref VPCCIDR
         PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
         PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
@@ -173,6 +185,24 @@ Resources:
       Parameters:
         VPCID: !GetAtt VPCStack.Outputs.VPCID
         VPCCIDR: !Ref VPCCIDR
+        OpenVPNPortNumber: !Ref OpenVPNPortNumber
+
+  VPNStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - '/'
+        - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
+          - !Sub ${QSS3KeyPrefix}templates
+          - cloudformation.staging.eks.vpn.yml
+      Parameters:
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        OpenVPNPortNumber: !Ref OpenVPNPortNumber
+        VPNInstanceKeyName: !Ref VPNInstanceKeyName
+        LocalConnectionIP: !Ref AllowedWebBlock
+        TargetVpc: !GetAtt VPCStack.Outputs.VPCID
+        TargetSubnet: !GetAtt VPCStack.Outputs.PublicSubnet1ID
+        VPNSecurityGroup: !GetAtt SGStack.Outputs.VpnAccessSecurityGroup
 
   AirflowStack:
     Type: AWS::CloudFormation::Stack
@@ -217,6 +247,7 @@ Resources:
           - !Sub ${QSS3KeyPrefix}templates
           - cloudformation.staging.eks.resources.yml
       Parameters:
+        # TODO: Use private subnets only + NAT + VPN
         PrivateSubnet1ID: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
         PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
         EfsSecurityGroup: !GetAtt SGStack.Outputs.EfsAccessSecurityGroup
@@ -246,6 +277,8 @@ Outputs:
     Value: !GetAtt CIStack.Outputs.CodeDeployApplication
   CodeDeployDeploymentGroup:
     Value: !GetAtt CIStack.Outputs.CodeDeployDeploymentGroup
+  CertsBucket:
+    Value: !GetAtt VPNStack.Outputs.
 
 Metadata:
   AWS::CloudFormation::Interface:

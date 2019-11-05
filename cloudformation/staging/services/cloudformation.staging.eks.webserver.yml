@@ -18,10 +18,14 @@ Parameters:
     Type: AWS::EC2::Image::Id
   InstanceType:
     Type: String
-  PublicSubnet1ID:
+  PrivateSubnet1ID:
     Type: String
-  PublicSubnet2ID:
+  PrivateSubnet2ID:
     Type: String
+#  PublicSubnet1ID:
+#    Type: String
+#  PublicSubnet2ID:
+#    Type: String
 
 Resources:
 
@@ -68,8 +72,8 @@ Resources:
       MetricsCollection:
         - Granularity: 1Minute
       VPCZoneIdentifier:
-        - !Ref PublicSubnet1ID
-        - !Ref PublicSubnet2ID
+        - !Ref PrivateSubnet1ID
+        - !Ref PrivateSubnet2ID
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-webserver

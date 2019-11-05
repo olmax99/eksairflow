@@ -11,13 +11,26 @@ export message1
 $(error $(message1))
 endif
 
+# $(shell aws cloudformation describe-stacks \
+# 	--stack-name $(stack_name) \
+# 	--query "Stacks[0].Outputs[?OutputKey=='$(1)'].OutputValue" \
+# 	--output text)
+
+define certs_bucket
+$(shell aws cloudformation describe-stacks \
+	--stack-name kubeairflow-staging \
+	--query "Stacks[0].Outputs[?OutputKey=='CertsBucketName'].OutputValue" \
+	--output text)
+
+endef
 
 # CloudFormation master
 CURRENT_LOCAL_IP = $(BASE_IP)
 CFN_TEMPLATES_BUCKET := kubeairflow-cloudformation-eu-central-1
 AWS_REGION := eu-central-1
 PROJECT_NAME := kubeairflow-staging
-VPN_KEY_NAME := kubeairflow-staging-bastion
+VPN_KEY_NAME := eksairflow-staging-bastion
+VPN_CERTS_BUCKET := $(certs_bucket)
 
 # deployment variables
 APPLICATION = $(PROJECT_NAME)-deployment-application
@@ -25,6 +38,7 @@ DEPLOYMENT_GROUP = $(PROJECT_NAME)-deployment-group
 DEPLOYMENTS_BUCKET = $(PROJECT_NAME)-deployments-eu-central-1
 REVISION := $(shell date --utc +%Y%m%dT%H%M%SZ)
 PACKAGE = $(PROJECT_NAME)_$(REVISION).tgz
+
 
 lint:
 	cfn-lint templates/cluster/*.template
@@ -44,17 +58,19 @@ templates:
         aws s3 cp --recursive cloudformation/staging/ci s3://${PROJECT_NAME}-${AWS_REGION}/stagingtemplates/
 
 cluster: templates
-		aws cloudformation --region ${AWS_REGION} create-stack --stack-name ${PROJECT_NAME} \
+		aws cloudformation --region ${AWS_REGION} update-stack --stack-name ${PROJECT_NAME} \
                 --template-body file://cloudformation/staging/cloudformation.staging.eks.master.yml \
                 --parameters \
                 ParameterKey="AllowedWebBlock",ParameterValue="${CURRENT_LOCAL_IP}" \
                 ParameterKey="DbMasterPassword",ParameterValue="super_secret" \
                 ParameterKey="QSS3BucketName",ParameterValue="${PROJECT_NAME}-${AWS_REGION}" \
                 ParameterKey="QSS3KeyPrefix",ParameterValue="staging" \
+                ParameterKey="OpenVPNPortNumber",ParameterValue="11146" \
+                ParameterKey="VPNInstanceKeyName",ParameterValue="${VPN_KEY_NAME}" \
                 --capabilities CAPABILITY_NAMED_IAM
 
-# vpn:
-#         aws s3 cp s3://${VPN_CERTS_BUCKET}/client/FlaskApiVPNClient.zip ~/Downloads/FlaskApiVPNClient/
+vpn:
+		aws s3 cp s3://${VPN_CERTS_BUCKET}/client/stagingVPNClient.zip ~/Downloads/${PROJECT_NAME}VPNClient/
 #         unzip ~/Downloads/FlaskApiVPNClient/FlaskApiVPNClient.zip -d ~/Downloads/FlaskApiVPNClient
 #         nmcli con import type openvpn file ~/Downloads/FlaskApiVPNClient/flaskapi_vpn_clientuser.ovpn
 
