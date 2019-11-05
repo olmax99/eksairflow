@@ -1,0 +1,10 @@
+global:
+  # owner:
+  qsname: kubeairflow
+  regions:
+    - eu-central-1
+    - eu-west-1
+tests:
+  default:
+    parameter_input: parameters.json
+    template_file: cloudformation.staging.eks.master.yml

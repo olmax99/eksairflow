@@ -69,7 +69,7 @@ Resources:
         - /
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
           - !Sub ${QSS3KeyPrefix}templates
-          - turbine-scheduler.template
+          - cloudformation.staging.eks.scheduler.yml
       Parameters:
         ParentStack: !Ref AWS::StackName
         IamInstanceProfile: !Ref AirflowProfile
@@ -91,7 +91,7 @@ Resources:
         - /
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
           - !Sub ${QSS3KeyPrefix}templates
-          - turbine-webserver.template
+          - cloudformation.staging.eks.webserver.yml
       Parameters:
         ParentStack: !Ref AWS::StackName
         VPCID: !Ref VPCID
@@ -116,7 +116,7 @@ Resources:
         - /
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
           - !Sub ${QSS3KeyPrefix}templates
-          - turbine-workerset.template
+          - cloudformation.staging.eks.workerset.yml
       Parameters:
         ParentStack: !Ref AWS::StackName
         VPCID: !Ref VPCID

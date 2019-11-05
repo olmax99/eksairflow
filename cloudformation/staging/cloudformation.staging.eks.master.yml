@@ -143,8 +143,8 @@ Resources:
       TemplateURL: !Join
         - '/'
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
-          - !Sub ${QSS3KeyPrefix}submodules
-          - quickstart-aws-vpc/templates/cloudformation.staging.eks.vpc.yml
+          - !Sub ${QSS3KeyPrefix}templates
+          - cloudformation.staging.eks.vpc.yml
       Parameters:
         VPCCIDR: !Ref VPCCIDR
         PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
@@ -215,7 +215,7 @@ Resources:
         - '/'
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
           - !Sub ${QSS3KeyPrefix}templates
-          - turbine-resource.template
+          - cloudformation.staging.eks.resources.yml
       Parameters:
         PrivateSubnet1ID: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
         PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
@@ -239,7 +239,7 @@ Resources:
         WorkerSetScalingGroup: !GetAtt AirflowStack.Outputs.WorkerSetAutoScaling
 
 Outputs:
-  # NOTE: This is the context required by CodeDeploy create-deployment for 'example project airflow'
+  # NOTE: This is the context required by CodeDeploy create-deployment
   DeploymentsBucket:
     Value: !GetAtt CIStack.Outputs.DeploymentsBucket
   CodeDeployApplication:

@@ -1,7 +1,7 @@
 define message1
  Environment variable BASE_IP is required. Not set.
  		Use following command:
-        "$$ foo=`curl ipinfo.io | jq .ip`;eval foo=$${foo[i]};foo="$$foo/32"; export BASE_IP=$$foo"
+        "$$ my_ip=`curl ipinfo.io | jq .ip`;eval my_ip=$${my_ip[i]};my_ip="$$my_ip/32"; export BASE_IP=$$my_ip"
 
 endef
 
@@ -14,10 +14,10 @@ endif
 
 # CloudFormation master
 CURRENT_LOCAL_IP = $(BASE_IP)
-CFN_TEMPLATES_BUCKET := eksairflow-cloudformation-eu-central-1
+CFN_TEMPLATES_BUCKET := kubeairflow-cloudformation-eu-central-1
 AWS_REGION := eu-central-1
-PROJECT_NAME := eksairflow-staging
-VPN_KEY_NAME := eksairflow-staging-bastion
+PROJECT_NAME := kubeairflow-staging
+VPN_KEY_NAME := kubeairflow-staging-bastion
 
 # deployment variables
 APPLICATION = $(PROJECT_NAME)-deployment-application
@@ -26,21 +26,32 @@ DEPLOYMENTS_BUCKET = $(PROJECT_NAME)-deployments-eu-central-1
 REVISION := $(shell date --utc +%Y%m%dT%H%M%SZ)
 PACKAGE = $(PROJECT_NAME)_$(REVISION).tgz
 
+lint:
+	cfn-lint templates/cluster/*.template
+	cfn-lint templates/services/*.template
+
+test:
+	taskcat -c ./ci/taskcat.yaml
+
+sync:
+	aws s3 sync --exclude '.*' --acl public-read . $(BUCKET)
+
 # -------------------- Launch Cfn Master-------------------------------------
 
 templates:
-		aws s3 cp --recursive cfn-turbine s3://${CFN_TEMPLATES_BUCKET}/staging/
-		aws s3 cp --recursive cloudformation/staging/cluster s3://${CFN_TEMPLATES_BUCKET}/staging/
-        # aws s3 cp --recursive cloudformation/staging/services s3://${CFN_TEMPLATES_BUCKET}/staging/
+		aws s3 cp --recursive cloudformation/staging/cluster s3://${PROJECT_NAME}-${AWS_REGION}/stagingtemplates/ && \
+        aws s3 cp --recursive cloudformation/staging/services s3://${PROJECT_NAME}-${AWS_REGION}/stagingtemplates/ && \
+        aws s3 cp --recursive cloudformation/staging/ci s3://${PROJECT_NAME}-${AWS_REGION}/stagingtemplates/
 
 cluster: templates
 		aws cloudformation --region ${AWS_REGION} create-stack --stack-name ${PROJECT_NAME} \
-		--template-body file://cloudformation/staging/cloudformation.staging.eks.master.yml \
-		--parameters ParameterKey="VpnAccessKey",ParameterValue="${VPN_KEY_NAME}" \
-		ParameterKey="LocalBaseIp",ParameterValue="${CURRENT_LOCAL_IP}" \
-		ParameterKey="CloudformationBucket",ParameterValue="${CFN_TEMPLATES_BUCKET}" \
-		ParameterKey="AirflowDeployBucket",ParameterValue="${DEPLOYMENTS_BUCKET}" \
-		--capabilities CAPABILITY_NAMED_IAM
+                --template-body file://cloudformation/staging/cloudformation.staging.eks.master.yml \
+                --parameters \
+                ParameterKey="AllowedWebBlock",ParameterValue="${CURRENT_LOCAL_IP}" \
+                ParameterKey="DbMasterPassword",ParameterValue="super_secret" \
+                ParameterKey="QSS3BucketName",ParameterValue="${PROJECT_NAME}-${AWS_REGION}" \
+                ParameterKey="QSS3KeyPrefix",ParameterValue="staging" \
+                --capabilities CAPABILITY_NAMED_IAM
 
 # vpn:
 #         aws s3 cp s3://${VPN_CERTS_BUCKET}/client/FlaskApiVPNClient.zip ~/Downloads/FlaskApiVPNClient/

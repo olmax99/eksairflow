@@ -1,0 +1,26 @@
+language: python
+python:
+  - "3.6"
+install:
+  - pip install cfn-lint taskcat awscli
+
+git:
+    submodules: false
+before_install:
+    # DELETE ME
+    - export BASE_IP=0.0.0.0/0
+
+# DON'T DO submodules
+#    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+#    - git submodule update --init --recursive
+#    - git checkout .gitmodules
+
+script:
+  - make lint
+  - make test
+
+deploy:
+  provider: script
+  script: make sync BRANCH=$TRAVIS_BRANCH
+  on:
+    branch: master
