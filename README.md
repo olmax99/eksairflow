@@ -1,19 +1,25 @@
-# EKS Airflow Build
+# AWS Airflow Build
 
-This airflow project is enabling both interaction with a local docker-compose build for testing and development 
+This project is currently WIP. It is a fully functional Airflow Build using Cloudformation and EC2 instances.
+
+Goal:
+This airflow project is enabling both interaction with a local minikube environment for testing and development 
 and with a custom Kubernetes production environment EKS on AWS. 
 
-The demo workflow intends to bid for spot instances and is scaling an external ECS cluster accordingly.
+The demo DAG intends to bid for spot instances and is scaling an external ECS cluster accordingly.
 
 ---
+
+[!kubeairflow-graph](images/kubeairflow.png)
 
 
 ## Project Design
 
-NOTE: All finished tasks can be viewed in [CHANGELOG.md](CHANGELOG.md)
+The Airflow AWS deployment is based on [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack). 
+In addition there is a VPN Bastion Host implemented, which strictly allows ingress from internal network IPs only. 
+Also the Airflow webserver endpoint can only be reached with the VPN activated.
 
-
-### 1. Deploy
+In a future version all Airflow EC2 services will be replaced by an EKS deployment.
 
 X Understand `villasv/aws-airflow-stack`: Turbine
 
@@ -22,6 +28,9 @@ X Understand `villasv/aws-airflow-stack`: Turbine
 - Understand Code deploy in [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) and compare to 'sync bucket method' (see `2. Upstream your files`)
 
 - Create nested cfn stack with a master template, private subnets + vpn
+
+### 1. Deploy
+
 
 
 ### 2. Airflow Stuff
@@ -262,7 +271,7 @@ respective resources via the Google Cloud API or the Google Console.
 
 ```
 
-#### Create new Cloud Composer Production Environment
+#### 2. Create new Cloud Composer Production Environment
 
 ```
 $ make eksairflow
@@ -270,6 +279,21 @@ $ make eksairflow
 	
 ```
 
+#### 3. Connect to Airflow Webserver
+
+Activate VPN:
+```
+# Ensure that Vpn connection is active through nmcli or networks settings
+$ make vpn
+
+
+
+# Create ssh remote forwarding tunnels and ensure that vpn conn is activated
+$ ssh -R 8080:<internal webserver ip>:8080 -i <bastion_key> ec2-user@<private_bastion_ip> 
+
+```
+
+In Browser: http://<internal webserver ip>:8080/admin/ 
 
 [Airflow Default Config](https://github.com/apache/airflow/blob/master/airflow/config_templates/default_airflow.cfg)
 

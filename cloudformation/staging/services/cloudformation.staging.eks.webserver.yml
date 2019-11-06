@@ -22,18 +22,15 @@ Parameters:
     Type: String
   PrivateSubnet2ID:
     Type: String
-#  PublicSubnet1ID:
-#    Type: String
-#  PublicSubnet2ID:
-#    Type: String
 
 Resources:
 
+  # TODO: Move to SG template
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: >-
-        Security Rules with permissions for node itercommunication between
+        Security Rules with permissions for node intercommunication between
         Airflow worker instances.
       VpcId: !Ref VPCID
       SecurityGroupIngress:

@@ -5,24 +5,20 @@ define message1
 
 endef
 
+define certs_bucket
+$(shell aws cloudformation describe-stacks \
+	--stack-name kubeairflow-staging \
+	--query "Stacks[0].Outputs[?OutputKey=='$(1)'].OutputValue" \
+	--output text)
+
+endef
 
 ifndef BASE_IP
 export message1
 $(error $(message1))
 endif
 
-# $(shell aws cloudformation describe-stacks \
-# 	--stack-name $(stack_name) \
-# 	--query "Stacks[0].Outputs[?OutputKey=='$(1)'].OutputValue" \
-# 	--output text)
-
-define certs_bucket
-$(shell aws cloudformation describe-stacks \
-	--stack-name kubeairflow-staging \
-	--query "Stacks[0].Outputs[?OutputKey=='CertsBucketName'].OutputValue" \
-	--output text)
-
-endef
+SHELL := /bin/bash
 
 # CloudFormation master
 CURRENT_LOCAL_IP = $(BASE_IP)
@@ -30,14 +26,7 @@ CFN_TEMPLATES_BUCKET := kubeairflow-cloudformation-eu-central-1
 AWS_REGION := eu-central-1
 PROJECT_NAME := kubeairflow-staging
 VPN_KEY_NAME := eksairflow-staging-bastion
-VPN_CERTS_BUCKET := $(certs_bucket)
-
-# deployment variables
-APPLICATION = $(PROJECT_NAME)-deployment-application
-DEPLOYMENT_GROUP = $(PROJECT_NAME)-deployment-group
-DEPLOYMENTS_BUCKET = $(PROJECT_NAME)-deployments-eu-central-1
-REVISION := $(shell date --utc +%Y%m%dT%H%M%SZ)
-PACKAGE = $(PROJECT_NAME)_$(REVISION).tgz
+VPN_CERTS_BUCKET := $(call certs_bucket,CertsBucket)
 
 
 lint:
@@ -65,32 +54,15 @@ cluster: templates
                 ParameterKey="DbMasterPassword",ParameterValue="super_secret" \
                 ParameterKey="QSS3BucketName",ParameterValue="${PROJECT_NAME}-${AWS_REGION}" \
                 ParameterKey="QSS3KeyPrefix",ParameterValue="staging" \
-                ParameterKey="OpenVPNPortNumber",ParameterValue="11146" \
                 ParameterKey="VPNInstanceKeyName",ParameterValue="${VPN_KEY_NAME}" \
                 --capabilities CAPABILITY_NAMED_IAM
 
 vpn:
-		aws s3 cp s3://${VPN_CERTS_BUCKET}/client/stagingVPNClient.zip ~/Downloads/${PROJECT_NAME}VPNClient/
-#         unzip ~/Downloads/FlaskApiVPNClient/FlaskApiVPNClient.zip -d ~/Downloads/FlaskApiVPNClient
-#         nmcli con import type openvpn file ~/Downloads/FlaskApiVPNClient/flaskapi_vpn_clientuser.ovpn
+		echo '$(shell aws s3 cp s3://${VPN_CERTS_BUCKET}/client/stagingVPNClient.zip ~/Downloads/${PROJECT_NAME}VPNClient/)' && \
+        unzip ~/Downloads/${PROJECT_NAME}VPNClient/stagingVPNClient.zip -d ~/Downloads/${PROJECT_NAME}VPNClient && \
+        nmcli con import type openvpn file ~/Downloads/${PROJECT_NAME}VPNClient/staging_vpn_clientuser.ovpn
 
 clean:
-		aws cloudformation delete-stack --stack-name ${PROJECT_NAME}
-#         rm -r ~/Downloads/FlaskApiVPNClient
-#         nmcli con delete flaskapi_vpn_clientuser
-
-# -------------------- Make new airflow deployment---------------------------
-
-package:
-	cd airflowapp && tar czf ../$(PACKAGE) .
-
-upload: package
-	aws s3 cp $(PACKAGE) s3://$(DEPLOYMENTS_BUCKET)
-
-deploy: upload
-	aws deploy create-deployment \
-		--application-name $(APPLICATION) \
-		--deployment-group-name $(DEPLOYMENT_GROUP) \
-		--s3-location bucket=$(DEPLOYMENTS_BUCKET),bundleType=tgz,key=$(PACKAGE) \
-		--deployment-config-name CodeDeployDefault.AllAtOnce \
-		--file-exists-behavior OVERWRITE
+		aws cloudformation delete-stack --stack-name ${PROJECT_NAME} && \
+		rm -r ~/Downloads/${PROJECT_NAME}VPNClient && \
+		nmcli con delete staging_vpn_clientuser

@@ -95,7 +95,7 @@ Resources:
       Parameters:
         ParentStack: !Ref AWS::StackName
         VPCID: !Ref VPCID
-        IngressCIDR: !Ref AllowedWebBlock
+        IngressCIDR: !Ref VPCCIDR
         IngressPort: !Ref WebserverPort
         IamInstanceProfile: !Ref AirflowProfile
         IamRole: !Ref AirflowRole

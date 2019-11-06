@@ -17,12 +17,6 @@ Parameters:
   QSS3KeyPrefix:
     Type: String
 
-#  OpenVPNCertBucketName:
-#    Description: S3 to store OpenVPN Certs
-#    Type: String
-#    AllowedPattern: "^[a-zA-Z0-9]+[a-zA-Z0-9-]+[a-zA-Z0-9]+$"
-#    Default: ${ProjectPrefix}-staging-openvpn-certs-eu-central-1
-
   TargetVpc:
     Description: Vpc in which following VPN will be deployed to
     Type: AWS::EC2::VPC::Id
@@ -85,7 +79,7 @@ Resources:
       SourceDestCheck: false
       Tags:
         - Key: Name
-          Value: flask-api-vpn-public-eni
+          Value: vpn-public-eni
 
   # ---------------- EC2 OpenVPN Role-------------------------------
 

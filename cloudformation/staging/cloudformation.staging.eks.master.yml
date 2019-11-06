@@ -137,6 +137,7 @@ Parameters:
   OpenVPNPortNumber:
     Description: The custom port to use for the open vpn traffic
     Type: Number
+    Default: 1194
   VPNInstanceKeyName:
     Description: Name of the existing SSH access Key
     Type: String
@@ -186,6 +187,7 @@ Resources:
         VPCID: !GetAtt VPCStack.Outputs.VPCID
         VPCCIDR: !Ref VPCCIDR
         OpenVPNPortNumber: !Ref OpenVPNPortNumber
+        AllowedCIDR: !Ref AllowedWebBlock
 
   VPNStack:
     Type: AWS::CloudFormation::Stack
@@ -247,9 +249,8 @@ Resources:
           - !Sub ${QSS3KeyPrefix}templates
           - cloudformation.staging.eks.resources.yml
       Parameters:
-        # TODO: Use private subnets only + NAT + VPN
         PrivateSubnet1ID: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
-        PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
+        PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PrivateSubnet2AID
         EfsSecurityGroup: !GetAtt SGStack.Outputs.EfsAccessSecurityGroup
         DbSecurityGroup: !GetAtt SGStack.Outputs.DbConnectionSecurityGroup
         PostgresDbUser: !Ref DbMasterUsername
@@ -270,15 +271,16 @@ Resources:
         WorkerSetScalingGroup: !GetAtt AirflowStack.Outputs.WorkerSetAutoScaling
 
 Outputs:
-  # NOTE: This is the context required by CodeDeploy create-deployment
+  # Context required by CodeDeploy create-deployment
   DeploymentsBucket:
     Value: !GetAtt CIStack.Outputs.DeploymentsBucket
   CodeDeployApplication:
     Value: !GetAtt CIStack.Outputs.CodeDeployApplication
   CodeDeployDeploymentGroup:
     Value: !GetAtt CIStack.Outputs.CodeDeployDeploymentGroup
+  # Context for VPN
   CertsBucket:
-    Value: !GetAtt VPNStack.Outputs.
+    Value: !GetAtt VPNStack.Outputs.CertsBucketName
 
 Metadata:
   AWS::CloudFormation::Interface:
