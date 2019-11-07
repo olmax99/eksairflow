@@ -49,6 +49,7 @@ Resources:
             --stack ${ParentStack} \
             --resource Meta
 
+  # TODO: Move to SG template
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -89,7 +90,7 @@ Resources:
       HeartbeatTimeout: 300
       LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
 
-  # ShrinkAlarm and GrowthAlarm are triggered by the treshold [...] from Metric Workerload
+  # ShrinkAlarm and GrowthAlarm are triggered by the threshold [...] from Metric Workerload
   ShrinkAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:

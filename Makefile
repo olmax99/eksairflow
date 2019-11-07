@@ -47,9 +47,14 @@ templates:
         aws s3 cp --recursive cloudformation/staging/ci s3://${PROJECT_NAME}-${AWS_REGION}/stagingtemplates/
 
 cluster: templates
-		aws cloudformation --region ${AWS_REGION} update-stack --stack-name ${PROJECT_NAME} \
+		aws cloudformation --region ${AWS_REGION} create-stack --stack-name ${PROJECT_NAME} \
                 --template-body file://cloudformation/staging/cloudformation.staging.eks.master.yml \
                 --parameters \
+                ParameterKey="VPCCIDR",ParameterValue="10.0.0.0/16" \
+                ParameterKey="PublicSubnet1CIDR",ParameterValue="10.0.0.0/24" \
+                ParameterKey="PublicSubnet2CIDR",ParameterValue="10.0.1.0/24" \
+                ParameterKey="PrivateSubnet1ACIDR",ParameterValue="10.0.10.0/24" \
+                ParameterKey="PrivateSubnet2ACIDR",ParameterValue="10.0.11.0/24" \
                 ParameterKey="AllowedWebBlock",ParameterValue="${CURRENT_LOCAL_IP}" \
                 ParameterKey="DbMasterPassword",ParameterValue="super_secret" \
                 ParameterKey="QSS3BucketName",ParameterValue="${PROJECT_NAME}-${AWS_REGION}" \

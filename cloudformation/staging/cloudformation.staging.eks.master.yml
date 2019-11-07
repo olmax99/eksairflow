@@ -158,7 +158,6 @@ Resources:
           - !Sub ${QSS3KeyPrefix}templates
           - cloudformation.staging.eks.vpc.yml
       Parameters:
-        # TODO: Replace public subnets with private only
         VPCCIDR: !Ref VPCCIDR
         PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
         PublicSubnet2CIDR: !Ref PublicSubnet2CIDR

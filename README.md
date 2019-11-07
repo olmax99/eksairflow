@@ -2,7 +2,7 @@
 
 This project is currently WIP. It is a fully functional Airflow Build using Cloudformation and EC2 instances.
 
-Goal:
+**Goal:**
 This airflow project is enabling both interaction with a local minikube environment for testing and development 
 and with a custom Kubernetes production environment EKS on AWS. 
 
@@ -10,7 +10,7 @@ The demo DAG intends to bid for spot instances and is scaling an external ECS cl
 
 ---
 
-[!kubeairflow-graph](images/kubeairflow.png)
+![kubeairflow-graph](images/kubeairflow.png)
 
 
 ## Project Design
@@ -21,16 +21,11 @@ Also the Airflow webserver endpoint can only be reached with the VPN activated.
 
 In a future version all Airflow EC2 services will be replaced by an EKS deployment.
 
-X Understand `villasv/aws-airflow-stack`: Turbine
-
-- [Optionally] Use AWS Systems Manager instead of Bastion Host 
-
-- Understand Code deploy in [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) and compare to 'sync bucket method' (see `2. Upstream your files`)
-
-- Create nested cfn stack with a master template, private subnets + vpn
-
 ### 1. Deploy
 
+Using [AWS CodeDeploy](https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-codedeploy.html).
+
+- See [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) for more details on the implementation.
 
 
 ### 2. Airflow Stuff
@@ -51,6 +46,8 @@ X Understand `villasv/aws-airflow-stack`: Turbine
 
 
 #### Local Docker-Compose Build
+
+**NOTE:** Currently NOT implemented - TODO: Integrate local CodeDeploy setup with docker-compose environment for local testing and development.
 
 ```
 # default AIRFLOW_HOME = /usr/local/airflow
@@ -82,42 +79,19 @@ $ docker-compose -f docker-compose.testing.yml exec webserver sh -c "airflow con
 
 ```
 
-
-## Project Structure 
-
-```
-composer
-├── CHANGELOG.md
-├── README.md
-├── docker-compose.testing.yml
-├── docker-compose.development.yml
-└── airflowapp
-    ├── Dockerfile
-    ├── Pipfile
-    ├── Pipfile.lock
-    ├── airflow.cfg
-    ├── dags						--> SYNC TO S3 BUCKET
-    │   └── ...
-    ├── data						<-- SYNC FROM S3 BUCKET (gitignore)
-    ├── entrypoint.sh
-    ├── ekssync.sh
-    ├── logs						<-- SYNC FROM S3 BUCKET (gitignore)
-    │   ├── airflow_monitoring
-    │   └── ...
-    └── plugins						--> SYNC TO S3 BUCKET
-        ├── custom_plugins.py
-        └── ...
-
-
-```
-
   
 
 ## Getting Started. 
 
 
-**NOTE:** It is recommended to open the project in PyCharm on directory `airflowapp` as top directory !!!  
+---
 
+**NOTE: This is still all preliminary for the current version! In this Master Version, the local development** 
+**environment is NOT established yet.**.
+
+PRODUCTION WORKS AS DESCRIBED.
+
+---
 
 ### 1. Preparing the Environment. 
   
@@ -187,38 +161,26 @@ Create file is it does not exist. In `/etc/docker/daemon.json`:
 
 ```
 
-
-## Run Project in the preferred environment
-
-### Prepare custom environment variables
-
-Create a file `.dev.override.env` containing at the minimum the following variables:
-
-```
-Credentials and target URLs
-
-```
-
-
-### Run in development mode
+## Run in development mode
 
 ```
 $ docker-compose -f docker-compose.development.yml up --build
 
 ```
 
-##### Explanation for using FUSE:
+#### Explanation for using FUSE:
 
-In the current development setup, it is required that all files written to `composer/data` 
-will simultaneously written to this project's dedicated *Google Cloud Development Bucket*.
+In the current development setup, it is required that all files written to `mnt/efs`, which is the
+default path for the shared filesystem storage for all cluster nodes.
 
-This is achieved by the following file system mappings:
+
+**TODO:** This is achieved by the following file system mappings:
 
 1. The directory `airflowapp/data` inside docker is a volume mapped to `airflowapp/local_data`.
-2. The directory `airflowapp/local_data` is directly mounted to the dedicated *Google Cloud Development Bucket*.
+2. The directory `airflowapp/local_data` is directly mounted to the EFS shared filesystem.
 
 
-#### Adding local Connections for development and testing
+### 1. Adding local Connections for development and testing
 
 STEP 1: Add connection programmatically
 
@@ -251,15 +213,15 @@ ENV MY_CUSTOM_PASSWORD=$MY_CUSTOM_PASSWORD
 From then on, all variables can be used in `create_connections.py`.
 
 
-#### Sync local 'gcsfuse/data' directory with S3 Bucket
+### 2. Sync local 'gcsfuse/data' directory with EFS
 
-**RexRay** ...
+**RexRay**: [https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-efs](https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-efs)
 
 
-### Run in production
+## Run in production
 
-The production environment is the managed Google Cloud Composer environment. Interact with all the   
-respective resources via the Google Cloud API or the Google Console.
+The production environment is the AWS EC2 ScalingGroup environment. Interact with all the   
+respective resources via the AWS API or the AWS Console.
 
 #### 1. Add all custom connections
 
@@ -271,185 +233,50 @@ respective resources via the Google Cloud API or the Google Console.
 
 ```
 
-#### 2. Create new Cloud Composer Production Environment
+#### 2. Create new  Production Environment
+
+**STEP 1:** Create the CloudFormation environment.
 
 ```
-$ make eksairflow
-
+$ make cluster
 	
 ```
 
+**STEP 2:** Deploy the Airflow application
+
+In `airflowapp`:
+```
+$ export stack_name=<your stack>
+
+$ make deploy
+
+```
+
 #### 3. Connect to Airflow Webserver
+
+- **Linux**:
 
 Activate VPN:
 ```
 # Ensure that Vpn connection is active through nmcli or networks settings
 $ make vpn
 
-
-
-# Create ssh remote forwarding tunnels and ensure that vpn conn is activated
-$ ssh -R 8080:<internal webserver ip>:8080 -i <bastion_key> ec2-user@<private_bastion_ip> 
-
 ```
 
-In Browser: http://<internal webserver ip>:8080/admin/ 
-
-[Airflow Default Config](https://github.com/apache/airflow/blob/master/airflow/config_templates/default_airflow.cfg)
-
-
-#### Sync local directory [BEWARE OF DATA LOSS!!]
-
----  
-
-NOTE: NEVER MANUALLY SYNC REMOTE TO LOCAL, ALWAYS LOCAL TO REMOTE !!! USE RSYNC BASH SCRIPT INSTEAD !!!
-
-
-```
-# Bash environment needs destination 
-$ export EKSAIRFLOW_S3=<Bucket Name>
-
-# Use bash script for syncing in two directions
-$ bash eksairflow_sync.sh
-
-
-```
+In Browser: http://<internal webserver ip>:8080
 
 
 
 ## Running the Tests. 
 
 
-### Local Docker Environment
-
-
-#### Start Airflow Docker Build
-
-```
-$ docker-compose -f docker-compose.testing.yml up --build
-
-
-```
-
-
-
-## Monitoring - StackDriver
-
-...
-
-
-
-### i. Log aggregation
-
-[Usage of advanced log filters](https://cloud.google.com/logging/docs/view/advanced-filters#finding-quickly)
-
-### ii. Crash Reporting
-
-### iii. Application Performance
-
-### iv. Monitoring
-
-#### a. Uptime Check
-
-#### b. ...
-
-
 ### FAQ
-
-
-## General Concepts. 
-  
-
-
-### 1. Access the EKS Airflow Environment
-
-
-The main administrative GUI access can be done via **'Environment details'**.	
-
-Apart from configuration settings, there are the two main EKS Airflow resources accessible:    
-
-
-#### The Kubernetes Engine:   
-  
-
-1. Kubernetes **Cluster** Overview. 
-
-2. Kubernetes **Pods** access. 
-
-  - airflow-worker (3/3) via 'CeleryExecutor'
-
-  - airflow-scheduler Pod (1/1).   
-
-  - airflow-redis Pod (1/1). 
-
-  - airflow-monitoring Pod (1/1).   
-
-
-#### The Airflow resources:
-  
-##### 1. Airflow Bucket. 
- 
-  - `/dags`. 
-
-  - `/plugins`. 
-
-  - `/data` can be used from EKS Airflow directly as the FUSE filesystem is mounted at '/home/airflow/bucket/data'. Note that no directories `/`can be used that way as FUSE only has one root directory. Use an S3Operator in order to move files to the appropriate locations.  
-
-  - `/logs`. 
-
----
-
-NOTE:  
- 
-As a naming convention, a file stored in the root FUSE directory '/home/airflow/bucket/data' should always use `root_fuse_path` 
-as a path variable and *NEVER* ***file_path*** !!! 
-
-
-
-##### 2. Airflow Webserver
-
-
-#### Managing Connections In Local Airflow Docker
-
-NOTE: Http Connection need to be registered in Admin > Connection.
-
-##### MacOS and Windows:
-
-*Airflow GUI* at `localhost:8080`   
-
-
-Admin > Connections > Create
-
-- Conn_id: &nbsp;&nbsp;&nbsp;&nbsp; local_webapi_docker
-
-- Conn_Type: &nbsp;&nbsp;&nbsp;&nbsp; HTTP
-
-- Host: &nbsp;&nbsp;&nbsp;&nbsp; `host.docker.internal`
-
-- Port: 80
-  
-  
-##### From Terminal:
- 
-``` 
-$ docker exec -i dockerairflow_webserver_1 sh -c "airflow connections --add --conn_id local_webapi_docker --conn_type http --conn_host host.docker.internal --conn_port 80"
-
-
-```
-
-NOTE: CONSIDER ADDING CONNECTIONS PROGRAMMATICALLY IF USED PERMANENTLY! (See `airflowapp/create_connections.py`)
-
-
-#### Changing AWS Credentials
-
-...
 
 
 ## Author
 
 OlafMarangone
-Contact [olaf.marangone@theprosperity.company](mailto:olaf.marangone@theprosperity.company)  
-Initial work [Gitlab Link](https://gitlab.com/prosperitycompany/airflow).
+Contact [olmighty99@gmail.com](mailto:olmighty99@gmail.com) 
 
 
 ## FAQ's
@@ -490,11 +317,6 @@ executor = LocalExecutor
 
 
 ```
-
-
-- How can a S3 Bucket be mounted to a local docker?
-
-  * Use Docker Plugin RexRay: [https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-s3fs](https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-s3fs)
 
 - How can single tasks from a dag file be tested without actually running? 
 

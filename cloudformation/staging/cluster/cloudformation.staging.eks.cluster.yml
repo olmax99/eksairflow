@@ -166,6 +166,7 @@ Resources:
               command: |
                 mkdir /airflow
                 chown -R ec2-user /airflow
+            # Mounting EFS on path /mnt/efs
             mount:
               test: test ! -d /mnt/efs
               command: !Sub |
@@ -456,6 +457,7 @@ Resources:
               command: |
                 systemctl enable cfn-hup.service
                 systemctl start cfn-hup.service
+        # Setup CodeDeploy Agent
         cdagent:
           packages:
             yum:
