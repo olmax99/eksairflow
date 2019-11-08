@@ -19,12 +19,15 @@ Parameters:
 
 Resources:
 
+  # Identifier used for reference of deployment settings
   CodeDeployApplication:
     Type: AWS::CodeDeploy::Application
     Properties:
       ApplicationName: !Sub ${AWS::StackName}-deployment-application
+      # Blue/green: Instances are being replaced/ latest revision is installed
       ComputePlatform: Server
 
+  # Automatically deploys revisions to all instances associated with ASGs
   CodeDeployDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
@@ -38,6 +41,7 @@ Resources:
         - CodeDeployServiceRole
         - Arn
 
+  # Access to ASGs for setting up custom lc-hook, which polls deploy queue
   CodeDeployServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -52,6 +56,8 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole'
+
+  # --------------------- CleanUp Deployment Bucket-----------------------------
 
   # Custom CloudFormation hook that signals to target: Delete, Update, Create
   CleanUpDeployments:

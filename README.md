@@ -27,8 +27,12 @@ Using [AWS CodeDeploy](https://docs.aws.amazon.com/codedeploy/latest/userguide/g
 
 - See [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) for more details on the implementation.
 
+### 2. Architecture Stuff (ToDos)
 
-### 2. Airflow Stuff
+- monitor deployments and set up Auto Scaling notifications
+
+
+### 3. Airflow Stuff (ToDos)
 
 - verify and confirm that function is **idempotent**
 

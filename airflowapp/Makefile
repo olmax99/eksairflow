@@ -34,6 +34,7 @@ package:
 upload: package
 	aws s3 cp $(PACKAGE) s3://$(DEPLOYMENTS_BUCKET)
 
+# Each deploy will trigger a new bundle as target revision
 deploy: upload
 	aws deploy create-deployment \
 		--application-name $(APPLICATION) \

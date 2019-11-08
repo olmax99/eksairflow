@@ -457,7 +457,7 @@ Resources:
               command: |
                 systemctl enable cfn-hup.service
                 systemctl start cfn-hup.service
-        # Setup CodeDeploy Agent
+        # CodeDeploy Agent - polls for new target revision bundles, pulls and uses appspec.yml
         cdagent:
           packages:
             yum:

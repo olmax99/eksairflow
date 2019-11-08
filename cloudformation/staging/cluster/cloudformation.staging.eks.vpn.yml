@@ -51,24 +51,6 @@ Resources:
       AllocationId: !GetAtt EIP.AllocationId
       NetworkInterfaceId: !Ref OpenVPNNetworkInterface
 
-#  # TODO: Move to security groups template
-#  OpenVPNInstanceSG:
-#    Type: AWS::EC2::SecurityGroup
-#    Properties:
-#      GroupDescription: SG for OpenVPN EC2 Instance
-#      VpcId: !Ref TargetVpc
-#      SecurityGroupIngress:
-#        - IpProtocol: udp
-#          FromPort: !Ref OpenVPNPortNumber
-#          ToPort: !Ref OpenVPNPortNumber
-#          CidrIp: !Ref LocalConnectionIP
-#          # UNCOMMENT FOR TROUBLESHOOTING ONLY!
-#          # This will allow access from public IP
-#          # - IpProtocol: tcp
-#          #   FromPort: 22
-#          #   ToPort: 22
-#          #   CidrIp: !Ref LocalConnectionIP
-
   OpenVPNNetworkInterface:
     Type: AWS::EC2::NetworkInterface
     Properties:
@@ -135,7 +117,7 @@ Resources:
       IamInstanceProfile: !Ref EC2OpenVPNattachPolicyToRole
       Tags:
         - Key: Name
-          Value: -openvpn-ec2
+          Value: !Sub ${AWS::StackName}-openvpn-ec2
       UserData:
           # cfn-init runs a configset on the ec2 after having retrieved all necessary template parameters
           # cfn-signal just signals the Cloudformation build to proceed or finish
@@ -277,7 +259,6 @@ Resources:
               mode: "000700"
               owner: root
               group: root
-            # TODO: Create key name from ProjectPrefix
             /etc/openvpn/gen_ovpn_profile.sh:
               content: !Sub
                 - |
