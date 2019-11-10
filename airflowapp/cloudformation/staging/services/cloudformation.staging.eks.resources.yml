@@ -65,6 +65,7 @@ Resources:
       DBInstanceClass: db.t2.micro
       DBName: airflow
       Engine: postgres
+      EngineVersion: 11.5
       MasterUsername: !Ref PostgresDbUser
       MasterUserPassword: !Ref PostgresMasterPasswd
       Tags:

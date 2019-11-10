@@ -24,6 +24,7 @@ APPLICATION := $(call getRef,CodeDeployApplication)
 DEPLOYMENT_GROUP := $(call getRef,CodeDeployDeploymentGroup)
 DEPLOYMENTS_BUCKET := $(call getRef,DeploymentsBucket)
 
+# ---------------- CodeDeploy-----------------------------------------
 
 PACKAGE := $(stack_name)_$(revision).tgz
 
@@ -42,3 +43,17 @@ deploy: upload
 		--s3-location bucket=$(DEPLOYMENTS_BUCKET),bundleType=tgz,key=$(PACKAGE) \
 		--deployment-config-name CodeDeployDefault.AllAtOnce \
 		--file-exists-behavior OVERWRITE
+
+# ---------------- Docker-Compose-------------------------
+
+config:
+	cp airflow/airflow.cfg airflow/airflow_prod.cfg
+	mv airflow/airflow_dev.cfg airflow/airflow.cfg
+
+compose: config
+	docker-compose -f docker-compose.development.yml up --build
+
+down:
+	docker-compose -f docker-compose.development.yml down
+	cp airflow/airflow.cfg airflow/airflow_dev.cfg
+	mv airflow/airflow_prod.cfg airflow/airflow.cfg

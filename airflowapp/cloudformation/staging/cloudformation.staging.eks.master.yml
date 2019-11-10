@@ -195,7 +195,7 @@ Resources:
         - '/'
         - - !Sub https://${QSS3BucketName}.s3.amazonaws.com
           - !Sub ${QSS3KeyPrefix}templates
-          - cloudformation.staging.eks.vpn.yml
+          - cloudformation.staging.eks.bastion.yml
       Parameters:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         OpenVPNPortNumber: !Ref OpenVPNPortNumber

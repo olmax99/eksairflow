@@ -1,0 +1,123 @@
+version: '3'
+services:
+  airflow.postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - default
+
+  airflow.webserver:
+    user: root
+    build: ./airflow
+    restart: always
+    depends_on:
+      - airflow.postgres
+    env_file: ../.dev.override.env
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+      - RUN_MODE=development
+      - POSTGRES_HOST=airflow.postgres
+      - GOOGLE_APPLICATION_CREDENTIALS=/usr/local/airflow/secrets/gcp_key.json
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+      - ./airflow/plugins:/usr/local/airflow/plugins
+      - ./airflow/local_data:/usr/local/airflow/data
+      - ./airflow/local_logs:/usr/local/airflow/logs
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - default
+
+  prometheus:
+    image: prom/prometheus:v2.1.0
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    links:
+      - airflow.webserver:airflow.webserver
+      # - alertmanager:alertmanager
+    depends_on:
+      - airflow.webserver
+    networks:
+      - default
+    restart: always
+
+  # alertmanager:
+  #   image: prom/alertmanager:v0.18.0
+  #   ports:
+  #     - 9093:9093
+  #   volumes:
+  #     - ./alertmanager/:/etc/alertmanager/
+  #   networks:
+  #     - default
+  #   restart: always
+  #   command:
+  #     - '--config.file=/etc/alertmanager/config.yml'
+  #     - '--storage.path=/alertmanager'
+
+  cadvisor:
+    image: google/cadvisor:v0.32.0
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk/:ro
+    ports:
+      - 8088:8080
+    networks:
+      - default
+    restart: always
+
+  grafana:
+    image: grafana/grafana:6.2.4
+    user: "104"
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    env_file:
+      - grafana/config.monitoring
+    networks:
+      - default
+    restart: always
+
+  # TODO: Replace with local database and manager
+  # Uncomment for usage with docker airflow.postgres
+  # pgadmin:
+  #   image:  dpage/pgadmin4
+  #   depends_on:
+  #     - airflow.postgres
+  #   ports:
+  #     - "8000:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+  #     PGADMIN_DEFAULT_PASSWORD: pgadmin
+  #   networks:
+  #     - default
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
