@@ -393,9 +393,10 @@ executor = LocalExecutor
 
 ## Next Steps
 
-### 2. Architecture Stuff (ToDos)
+### Architecture Stuff
 
 - monitor deployments and set up Auto Scaling notifications
+- ..to be continued
 
 ## Author
 
