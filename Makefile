@@ -28,6 +28,7 @@ PROJECT_NAME := kubeairflow-staging
 VPN_KEY_NAME := eksairflow-staging-bastion
 VPN_CERTS_BUCKET := $(call get_certs_bucket,$(PROJECT_NAME),CertsBucket)
 
+# -------------------- Run tests---------------------------------------------
 
 lint:
 	cfn-lint templates/cluster/*.template

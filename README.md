@@ -1,6 +1,6 @@
 # AWS Airflow Build
 
-This project is currently WIP. It is a fully functional Airflow Build using Cloudformation and EC2 instances.
+This project is a fully functional Airflow Build using Cloudformation and EC2 instances along with a docker-compose local development setup.
 
 **Goal:**
 This airflow project is enabling both interaction with a local minikube environment for testing and development 
@@ -15,9 +15,9 @@ The demo DAG intends to bid for spot instances and is scaling an external ECS cl
 
 ## Project Design
 
-The Airflow AWS deployment is based on [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack). 
-In addition there is a VPN Bastion Host implemented, which strictly allows ingress from internal network IPs only. 
-Also the Airflow webserver endpoint can only be reached with the VPN activated.
+The Airflow AWS deployment is based on [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack). There is a VPN Bastion Host 
+implemented, which strictly allows ingress from internal network IPs only. The Airflow webserver can only be 
+reached with the VPN activated.
 
 In a future version all Airflow EC2 services will be replaced by an EKS deployment.
 
@@ -51,16 +51,8 @@ Using [AWS CodeDeploy](https://docs.aws.amazon.com/codedeploy/latest/userguide/g
 
 #### Local Docker-Compose Build
 
-**NOTE:** Currently NOT implemented - TODO: Integrate local CodeDeploy setup with docker-compose environment for local testing and development.
-
+**USEFUL COMMANDS:**
 ```
-# default AIRFLOW_HOME = /usr/local/airflow
-# plugins_folder = /usr/local/airflow/plugins
-# dags_folder = /usr/local/airflow/dags
-# More information see 'airflow.cfg'
-
-$ docker-compose -f docker-compose.testing.yml up --build
-
 $ docker-compose -f docker-compose.testing.yml exec webserver sh -c "airflow list_dags"
 
 # Run a task without scheduling, find date time in **Graph View**
@@ -87,70 +79,27 @@ $ docker-compose -f docker-compose.testing.yml exec webserver sh -c "airflow con
 
 ## Getting Started. 
 
-
----
-
-**NOTE: This is still all preliminary for the current version! In this Master Version, the local development** 
-**environment is NOT established yet.**.
-
-PRODUCTION WORKS AS DESCRIBED.
-
----
-
 ### 1. Preparing the Environment. 
-  
-
 
 #### Prerequisites
 
 - [Optionally] Pyenv
 - Pipenv integrated with Pyenv
-- Python Version 3.6.8
+- Python Version >=3.7
 - Docker installed
+- Docker-Compose
+- AWS account + awscli installed
 
 #### Install
 
-Pyenv and Pipenv is the new way to go for Python version control and virtual environments. Visit [SecretOfPythonPath](https://github.com/olmax99/secretofpythonpath) project for how to get started.  
+Pyenv and Pipenv is the new way to go for Python version control and virtual environments. Visit [SecretOfPythonPath](https://github.com/olmax99/secretofpythonpath) project 
+for how to get started.
 
 Docker should be installed on the system, else please read the official Docker docs.
 
-##### Step 1: Set the Python Version
-
-```
-# In directory airflowapp
-$ ls -al   # you should have a local file .python-version in the top of project directory
-
-# Optionally
-$ pyenv local 3.7.4
-$ python -V         # Python 3.7.4
-
-
-```
-
-##### Step 2: Create a new Pipenv.lock file if not present in the composer directory
-
-```
-# Will create the virtual environment folders along with a Pipfile.lock
-$ cd composer && pipenv install
-
-
-```
-
-##### Postgres Database can only be accessed locally
-
-Find Postgres Admin at `localhost:8000`
-
-```
-PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
-PGADMIN_DEFAULT_PASSWORD: pgadmin
-
-
-```
-
-
-##### Step 4: Docker deamon
-
-**NOTE:** The Docker needs to be configured in order to be a [target to Prometheus](https://docs.docker.com/config/thirdparty/prometheus/).
+- Step 1: Set the Python Version
+- Step 2: Create a new Pipenv.lock file if not present in the composer directory
+- Step 3: `dockerd` needs to be configured in order to be a [target to Prometheus](https://docs.docker.com/config/thirdparty/prometheus/).
 
 **Linux:**
 
@@ -165,32 +114,32 @@ Create file is it does not exist. In `/etc/docker/daemon.json`:
 
 ```
 
+- Optionally: Postgres Database can only be accessed locally via docker-compose (uncomment accordingly)
+
+Find Postgres Admin at `localhost:8000`
+
+```
+PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+PGADMIN_DEFAULT_PASSWORD: pgadmin
+
+
+```
+
 ## Run in development mode
 
+In directory `airflowapp`:
 ```
-$ docker-compose -f docker-compose.development.yml up --build
+$ make compose
 
 ```
-
-#### Explanation for using FUSE:
-
-In the current development setup, it is required that all files written to `mnt/efs`, which is the
-default path for the shared filesystem storage for all cluster nodes.
-
-
-**TODO:** This is achieved by the following file system mappings:
-
-1. The directory `airflowapp/data` inside docker is a volume mapped to `airflowapp/local_data`.
-2. The directory `airflowapp/local_data` is directly mounted to the EFS shared filesystem.
-
 
 ### 1. Adding local Connections for development and testing
 
-STEP 1: Add connection programmatically
+**STEP 1:** Add connection programmatically
 
 - In `airflowapp/create_connections.py` add the code according to previous examples provided 
 
-STEP 2: Add passwords and logins to environment variables
+**STEP 2:** Add passwords and logins to environment variables
 
 - In `.dev.override.env` add the appropriate environment variable, I.e.
 
@@ -200,7 +149,7 @@ MY_CUSTOM_PASSWORD=super_secret
 
 ``` 
 
-STEP 3: Adjust Dockerfile
+**STEP 3:** Adjust Dockerfile
 
 All custom variables need to be added in the section `# Custom passwords (i.e. connections)`.
 
@@ -217,9 +166,22 @@ ENV MY_CUSTOM_PASSWORD=$MY_CUSTOM_PASSWORD
 From then on, all variables can be used in `create_connections.py`.
 
 
-### 2. Sync local 'gcsfuse/data' directory with EFS
+### 2. Commit changes into staging environment
 
-**RexRay**: [https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-efs](https://rexray.readthedocs.io/en/stable/user-guide/storage-providers/aws/#aws-efs)
+**NOTE:** It is NOT recommended to directly deploy into production. Cloudformation allows for
+keeping two identical and complete environments, and this should be anyways restricted via IAM user
+policies.
+
+1. Stop the local docker-compose environment
+2. Push a new revision bundle via CodeDeploy
+
+In directory `airflowapp`:
+```
+$ make down
+
+$ make deploy
+
+```
 
 
 ## Run in production
@@ -258,16 +220,17 @@ $ make deploy
 
 #### 3. Connect to Airflow Webserver
 
-- **Linux**:
+**Linux**:
 
-Activate VPN:
+- Create VPN certificates
+- Activate VPN `*.ovpn` file via nmcli or network settings
+
 ```
-# Ensure that Vpn connection is active through nmcli or networks settings
 $ make vpn
 
 ```
 
-In Browser: http://<internal webserver ip>:8080
+In Browser: http://<internal webserver instance IP>:8080
 
 
 
@@ -279,12 +242,13 @@ In Browser: http://<internal webserver ip>:8080
 - How to log-in to webserver/worker/scheduler instance(s) for debugging or admin tasks?
 
 Use the Console `AWS Systems Manager`/`Session Manager` for secure login without the need of SSH
-and going through Bastion Host.
+or the need of going through Bastion Host.
 
 
 - How to login into the airflow database for debugging?
 
-Install psql client (NOT directly available in AMZNLINUX2):
+
+Install the psql client inside the Bastion Host (NOT directly available in AMZNLINUX2):
 ```
 sudo yum groupinstall "Development Tools" -y
 sudo yum install readline readline-devel systemd-devel -y
@@ -300,15 +264,17 @@ sudo make install
 - How does the worker load the deployment resources into airflow?
 
 Airflow is installed as a regular pip3 package in `/usr/local/lib/python3.7/site-packages`. The 
-`airflow.service` is started through `scripts/cdapp_start.sh` defined in `appspec.yml` every time
-a new CodeDeploy bundle is set as target revision (each `aws deploy` invocation).
+`airflow.service` is started under systemd through `scripts/cdapp_start.sh` defined in `appspec.yml` 
+every time a new CodeDeploy bundle is set as target revision (each `aws deploy` invocation).
 
 `/etc/sysconfig/airflow` defines `AIRFLOW_HOME=/airflow`. 
 
-- Airflow loads `$AIRFLOW_HOME/dags` into the database every time `/usr/local/bin/airflow upgradedb` is triggered (each `aws deploy` invocation).
-- A simple Airflow plugin manager is loading all python modules from the $AIRFLOW_HOME/plugins
+- Airflow loads `$AIRFLOW_HOME/dags` into the database every time `/usr/local/bin/airflow upgradedb` 
+  is triggered (each `aws deploy` invocation).
+- A simple Airflow plugin manager is loading all python modules from the `$AIRFLOW_HOME/plugins` directory.
 
-`/usr/lib/systemd/system/airflow.service` defines which service to start in
+`/usr/lib/systemd/system/airflow.service` defines which service is being started within a new auto
+scaling instance.
 
 ```
 [Service]
@@ -335,7 +301,7 @@ airflow.service
 
 2. Worker
 ```
-irflow.service
+airflow.service
    Loaded: loaded (/usr/lib/systemd/system/airflow.service; enabled; vendor preset: disabled)
    Active: active (running) since Sun 2019-11-10 16:04:43 UTC; 13min ago
  Main PID: 16948 ([celeryd: celer)
@@ -359,14 +325,6 @@ airflow.service
 
 ```
 
-## Author
-
-OlafMarangone
-Contact [olmighty99@gmail.com](mailto:olmighty99@gmail.com) 
-
-
-## FAQ's
-
 - How is a simple airflow project being build with docker?
 
   * [https://github.com/puckel/docker-airflow](https://github.com/puckel/docker-airflow)
@@ -388,11 +346,14 @@ Specific **DockerOperator** for this:
 
 - What is the difference between LocalExecutor, SequentialExecutor, and CeleryExecutor?
 
-  * The LocalExecutor can parallelize task instances locally, but only works in a simple single-container-like environment (even though there is an option of connecting custom data bases, i.e. replacing sqlite with postgreSQL.
+  * The LocalExecutor can parallelize task instances locally, but only works in a simple
+  single-container-like environment (even though there is an option of connecting custom data bases, 
+  i.e. replacing sqlite with postgreSQL.
 
 - How to set up Postgres usage instead of local sqlite?
 
-  * To configure Airflow to use Postgres rather than the default Sqlite3, go to airflow.cfg and update this configuration to `LocalExecutor`
+  * To configure Airflow to use Postgres rather than the default Sqlite3, go to airflow.cfg and 
+  update this configuration to `LocalExecutor`
 
 Airflow.cfg
 
@@ -454,6 +415,13 @@ executor = LocalExecutor
 
 
 ```
+
+## Author
+
+OlafMarangone
+Contact [olmighty99@gmail.com](mailto:olmighty99@gmail.com)
+
+
 
 
 
