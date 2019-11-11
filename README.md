@@ -205,8 +205,7 @@ $ make vpn
 
 ```
 
-In Browser: http://<internal webserver instance IP>:8080
-
+In Browser: `http://<internal webserver instance IP>:8080`
 
 
 ## Running the Tests. 
