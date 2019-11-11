@@ -276,6 +276,88 @@ In Browser: http://<internal webserver ip>:8080
 
 ### FAQ
 
+- How to log-in to webserver/worker/scheduler instance(s) for debugging or admin tasks?
+
+Use the Console `AWS Systems Manager`/`Session Manager` for secure login without the need of SSH
+and going through Bastion Host.
+
+
+- How to login into the airflow database for debugging?
+
+Install psql client (NOT directly available in AMZNLINUX2):
+```
+sudo yum groupinstall "Development Tools" -y
+sudo yum install readline readline-devel systemd-devel -y
+wget -O - https://ftp.postgresql.org/pub/source/v11.4/postgresql-11.4.tar.bz2 | tar jxf -
+cd postgresql-11.4
+
+make
+sudo make install
+
+```
+
+
+- How does the worker load the deployment resources into airflow?
+
+Airflow is installed as a regular pip3 package in `/usr/local/lib/python3.7/site-packages`. The 
+`airflow.service` is started through `scripts/cdapp_start.sh` defined in `appspec.yml` every time
+a new CodeDeploy bundle is set as target revision (each `aws deploy` invocation).
+
+`/etc/sysconfig/airflow` defines `AIRFLOW_HOME=/airflow`. 
+
+- Airflow loads `$AIRFLOW_HOME/dags` into the database every time `/usr/local/bin/airflow upgradedb` is triggered (each `aws deploy` invocation).
+- A simple Airflow plugin manager is loading all python modules from the $AIRFLOW_HOME/plugins
+
+`/usr/lib/systemd/system/airflow.service` defines which service to start in
+
+```
+[Service]
+...
+ExecStart=/usr/bin/turbine
+
+```
+
+`airflow.service` will be started accordingly:
+
+1. Webserver
+```
+airflow.service
+   Loaded: loaded (/usr/lib/systemd/system/airflow.service; enabled; vendor preset: disabled)
+   Active: active (running) since Sun 2019-11-10 16:04:43 UTC; 7min ago
+ Main PID: 16841 (/usr/bin/python)
+   CGroup: /system.slice/airflow.service
+           ├─16841 /usr/bin/python3 /usr/local/bin/airflow webserver
+           ├─16850 gunicorn: master [airflow-webserver]
+           ├─16902 [ready] gunicorn: worker [airflow-webserver]
+           ├─16915 [ready] gunicorn: worker [airflow-webserver]
+
+```
+
+2. Worker
+```
+irflow.service
+   Loaded: loaded (/usr/lib/systemd/system/airflow.service; enabled; vendor preset: disabled)
+   Active: active (running) since Sun 2019-11-10 16:04:43 UTC; 13min ago
+ Main PID: 16948 ([celeryd: celer)
+   CGroup: /system.slice/airflow.service
+           ├─16948 [celeryd: celery@ip-10-0-10-200.eu-central-1.compute.internal:MainProcess] -active- (worker)
+           ├─16956 /usr/bin/python3 /usr/local/bin/airflow serve_logs
+           ├─16957 [celeryd: celery@ip-10-0-10-200.eu-central-1.compute.internal:ForkPoolWorker-1]
+           ├─16958 [celeryd: celery@ip-10-0-10-200.eu-central-1.compute.internal:ForkPoolWorker-2]
+
+```
+
+3. Scheduler
+```
+airflow.service
+   Loaded: loaded (/usr/lib/systemd/system/airflow.service; enabled; vendor preset: disabled)
+   Active: active (running) since Sun 2019-11-10 16:04:45 UTC; 14min ago
+ Main PID: 16781 (/usr/bin/python)
+   CGroup: /system.slice/airflow.service
+           ├─16781 /usr/bin/python3 /usr/local/bin/airflow scheduler
+           └─16790 airflow scheduler -- DagFileProcessorManager
+
+```
 
 ## Author
 

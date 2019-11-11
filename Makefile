@@ -5,10 +5,10 @@ define message1
 
 endef
 
-define certs_bucket
+define get_certs_bucket
 $(shell aws cloudformation describe-stacks \
-	--stack-name kubeairflow-staging \
-	--query "Stacks[0].Outputs[?OutputKey=='$(1)'].OutputValue" \
+	--stack-name '$(1)' \
+	--query "Stacks[0].Outputs[?OutputKey=='$(2)'].OutputValue" \
 	--output text)
 
 endef
@@ -26,7 +26,7 @@ CFN_TEMPLATES_BUCKET := kubeairflow-cloudformation-eu-central-1
 AWS_REGION := eu-central-1
 PROJECT_NAME := kubeairflow-staging
 VPN_KEY_NAME := eksairflow-staging-bastion
-VPN_CERTS_BUCKET := $(call certs_bucket,CertsBucket)
+VPN_CERTS_BUCKET := $(call get_certs_bucket,$(PROJECT_NAME),CertsBucket)
 
 
 lint:
