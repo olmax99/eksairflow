@@ -21,31 +21,6 @@ reached with the VPN activated.
 
 In a future version all Airflow EC2 services will be replaced by an EKS deployment.
 
-### 1. Deploy
-
-Using [AWS CodeDeploy](https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-codedeploy.html).
-
-- See [https://github.com/villasv/aws-airflow-stack](https://github.com/villasv/aws-airflow-stack) for more details on the implementation.
-
-### 2. Architecture Stuff (ToDos)
-
-- monitor deployments and set up Auto Scaling notifications
-
-
-### 3. Airflow Stuff (ToDos)
-
-- verify and confirm that function is **idempotent**
-
-- understand the [airflow scheduler](https://cwiki.apache.org/confluence/display/AIRFLOW/Scheduler+Basics). 
-
-- adjust airflow scheduler datetime to the current tz (or utc)
-
-- store passwords as encrypted  
-
-- store all variables in a [single json variable](https://medium.com/datareply/airflow-lesser-known-tips-tricks-and-best-practises-cf4d4a90f8f). 
-
-- Do not load dags with prefix `archive_`
-
 ---
 
 
@@ -415,6 +390,12 @@ executor = LocalExecutor
 
 
 ```
+
+## Next Steps
+
+### 2. Architecture Stuff (ToDos)
+
+- monitor deployments and set up Auto Scaling notifications
 
 ## Author
 
