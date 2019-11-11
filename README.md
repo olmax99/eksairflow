@@ -1,6 +1,6 @@
 # AWS Airflow Build
 
-This project is a fully functional Airflow Build using Cloudformation and EC2 instances along with a docker-compose local development setup.
+This project is a close-to-production Airflow Build using Cloudformation and EC2 instances along with a docker-compose local development setup.
 
 **Goal:**
 This airflow project is enabling both interaction with a local minikube environment for testing and development 
