@@ -15,7 +15,7 @@ services:
     restart: always
     depends_on:
       - airflow.postgres
-    env_file: ../.dev.override.env
+    env_file: .dev.override.env
     environment:
       - LOAD_EX=n
       - EXECUTOR=Local
@@ -26,8 +26,8 @@ services:
     volumes:
       - ./airflow/dags:/usr/local/airflow/dags
       - ./airflow/plugins:/usr/local/airflow/plugins
-      - ./airflow/local_data:/usr/local/airflow/data
-      - ./airflow/local_logs:/usr/local/airflow/logs
+      # - ./airflow/local_data:/usr/local/airflow/data
+      # - ./airflow/local_logs:/usr/local/airflow/logs
     ports:
       - "8080:8080"
     command: webserver
