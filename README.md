@@ -2,8 +2,6 @@
 
 This project is a close-to-production Airflow Build using Cloudformation and EC2 instances along with a docker-compose local development setup.
 
-The demo DAG intends to bid for spot instances and is scaling an external ECS cluster accordingly.
-
 ---
 
 ![kubeairflow-graph](images/kubeairflow.png)
