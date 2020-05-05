@@ -2,10 +2,6 @@
 
 This project is a close-to-production Airflow Build using Cloudformation and EC2 instances along with a docker-compose local development setup.
 
-**Goal:**
-This airflow project is enabling both interaction with a local minikube environment for testing and development 
-and with a custom Kubernetes production environment EKS on AWS. 
-
 The demo DAG intends to bid for spot instances and is scaling an external ECS cluster accordingly.
 
 ---
