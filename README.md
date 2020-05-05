@@ -13,8 +13,6 @@ The Airflow AWS deployment is based on [https://github.com/villasv/aws-airflow-s
 implemented, which strictly allows ingress from internal network IPs only. The Airflow webserver can only be 
 reached with the VPN activated.
 
-In a future version all Airflow EC2 services will be replaced by an EKS deployment.
-
 ---
 
 
